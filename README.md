@@ -1,2 +1,6 @@
 # AoC2022
-Go solutions to 2022 advent of code challenges.
+
+This year I decided to learn the Go programming language, while solving AoC problems.
+
+The advent can be found [here](https://adventofcode.com/2022).
+
