@@ -16,6 +16,12 @@ func getLines(s string) []string {
 	return strings.Split(strings.Trim(s, "\n"), "\n")
 }
 
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
 func main() {
 	data, e := os.ReadFile("input17")
 	check(e)
@@ -40,16 +46,41 @@ func task1(data string) int {
 }
 
 func task2(data string) int {
+	N := 1000000000000
 	j := Jets{strings.Trim(data, "\n"), 0}
 	c := Chamber{0, map[Point]bool{}}
 
-	for i := 0; i < 1000000; i++ {
+	heights := map[RelativeState]int{}
+	turns := map[RelativeState]int{}
+	postPeriodTurn := 0
+	postPeriodExtraHeight := 0
+
+	for i := 0; i < N; i++ {
+		h := c.relativeHeights()
+		relativeState := RelativeState{h[0], h[1], h[2], h[3], h[4], h[5], h[6], i % 5, j.nextIndex}
+		if _, exist := heights[relativeState]; exist {
+			periodTurns := i - turns[relativeState]
+			periodHeight := c.top - heights[relativeState]
+			periodCounts := (N - i) / periodTurns
+			postPeriodTurn = (periodTurns * periodCounts) + i
+			postPeriodExtraHeight = periodHeight * periodCounts
+			break
+		}
+
+		heights[relativeState] = c.top
+		turns[relativeState] = i
 		pos := Point{2, c.top + 4}
 		r := Rock{pos, i % 5}
 		c.dropRock(r, &j)
 	}
 
-	return c.top
+	for i := postPeriodTurn; i < N; i++ {
+		pos := Point{2, c.top + 4}
+		r := Rock{pos, i % 5}
+		c.dropRock(r, &j)
+	}
+
+	return c.top + postPeriodExtraHeight
 }
 
 type Jets struct {
@@ -144,4 +175,21 @@ func (c *Chamber) dropRock(r Rock, j *Jets) {
 		r = rockDown
 	}
 	c.restRock(r)
+}
+
+func (c Chamber) relativeHeights() []int {
+	relativeHeights := []int{0, 0, 0, 0, 0, 0, 0}
+	for p := range c.blocked {
+		relativeHeights[p.x] = max(relativeHeights[p.x], p.y)
+	}
+	for i := 0; i < 7; i++ {
+		relativeHeights[i] -= c.top
+	}
+	return relativeHeights
+}
+
+type RelativeState struct {
+	h1, h2, h3, h4, h5, h6, h7 int
+	rockType                   int
+	jetIndex                   int
 }
