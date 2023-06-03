@@ -130,19 +130,37 @@ func (s *State) next(c Cost) {
 	s.resources.step(s.bots, c)
 }
 
+
+func (s *State) hash() int {
+	b := s.bots.ore + s.bots.clay << 8 + s.bots.obsidian << 16 + s.bots.geode << 24
+	r := s.resources.ore + s.resources.clay << 8 + s.resources.obsidian << 16 + s.resources.geode << 24
+	return b << 32 + r
+}
+
 func (b Blueprint) GetMaxGeode(minutes int) int {
 	initialState := State{minutes, initialBots(), InitialResource()}
 	states := []State{initialState}
+	seen := map[int]bool{}
 
 	maxGeode := 0
 	for len(states) > 0 {
 		state := states[len(states)-1]
 		states = states[:len(states)-1]
 
+		maxGeode = max(maxGeode, state.resources.geode)
 		if state.minutes == 0 {
-			maxGeode = max(maxGeode, state.resources.geode)
 			continue
 		}
+		stateMaxGeode := state.resources.geode + (state.bots.geode * minutes) + (minutes * (minutes - 1) / 2)
+		if stateMaxGeode < maxGeode {
+			continue
+		}
+
+		stateHash := state.hash()
+		if seen[stateHash] {
+			continue
+		}
+		seen[stateHash] = true
 
 		states = append(states, b.nextStates(state)...)
 	}
